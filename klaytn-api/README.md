@@ -4,15 +4,6 @@ Klaytn Network Intelligence API
 This is the backend service which runs along with Klaytn and tracks the network status,
 fetches information through JSON-RPC and connects through WebSockets to [klaytn-netstats](https://github.com/klaytn/klaytn-netstats) to feed information.
 
-## Prerequisite
-* node
-* npm
-
-## Installation
-
-There is a `Dockerfile` in the root directory of the repository. Please read through the header of said file for
-instructions on how to build/run/setup. Configuration instructions below still apply.
-
 ## Configuration
 
 Configure the app modifying [app.json](/klaytn-api/app.json).
@@ -29,12 +20,4 @@ Configure the app modifying [app.json](/klaytn-api/app.json).
 		"WS_SECRET"       : "mysecret" // WebSockets api server secret used for login
 		"VERBOSITY"       : 2 // Set the verbosity (0 = silent, 1 = error, warn, 2 = error, warn, info, success, 3 = all logs)
 	}
-```
-
-## Run
-
-Run it using pm2:
-
-```bash
-pm2 start app.json
 ```
