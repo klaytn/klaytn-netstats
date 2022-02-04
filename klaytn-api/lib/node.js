@@ -486,11 +486,15 @@ Node.prototype.getStats = function(forced)
 			},
 			mining: function (callback)
 			{
-				web3.eth.getMining(callback);
+				// Klaytn block info does not have 'mining' field.
+				// Always return false for mining.
+				callback(false, false);
 			},
 			hashrate: function (callback)
 			{
-				web3.eth.getHashrate(callback);
+				// Klaytn block info does not have 'hashrate' field.
+				// Always return 0 for hashrate.
+				callback(false, 0);
 			},
 			gasPrice: function (callback)
 			{
