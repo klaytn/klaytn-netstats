@@ -3,9 +3,9 @@ Klaytn Network Stats
 
 This is a visual interface for tracking Klaytn network status.
 It uses WebSockets to receive stats from running nodes and output them through an angular interface.
-This repo is forked from [eth-netstats](https://github.com/cubedro/eth-netstats) (see [LICENSE](/klaytn-netstats/LICENSE)).
-It is backed by the back-end implementation in [klaytn-api](/klaytn-netstats/klaytn-api)
-which is copied from [eth-net-intelligence-api](https://github.com/cubedro/eth-net-intelligence-api) (see [LICENSE](/klaytn-netstats/klaytn-api/LICENSE)).
+This repo is forked from [eth-netstats](https://github.com/cubedro/eth-netstats) (see [LICENSE](/LICENSE)).
+It is backed by the back-end implementation in [klaytn-api](/klaytn-api)
+which is copied from [eth-net-intelligence-api](https://github.com/cubedro/eth-net-intelligence-api) (see [LICENSE](/klaytn-api/LICENSE)).
 
 ![Screenshot](https://raw.githubusercontent.com/klaytn/klaytn-netstats/master/src/images/screenshot.jpg?v=0.0.6 "Screenshot")
 

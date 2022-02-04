@@ -2,7 +2,7 @@ Klaytn Network Intelligence API
 ============
 
 This is the backend service which runs along with Klaytn and tracks the network status,
-fetches information through JSON-RPC and connects through WebSockets to [klaytn-netstats](/klaytn-netstats) to feed information.
+fetches information through JSON-RPC and connects through WebSockets to [klaytn-netstats](https://github.com/klaytn/klaytn-netstats) to feed information.
 
 ## Prerequisite
 * node
@@ -15,7 +15,7 @@ instructions on how to build/run/setup. Configuration instructions below still a
 
 ## Configuration
 
-Configure the app modifying [app.json](/klaytn-netstats/blob/master/klaytn-api/app.json).
+Configure the app modifying [app.json](/klaytn-api/app.json).
 
 ```json
 	{
