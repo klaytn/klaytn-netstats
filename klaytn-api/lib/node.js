@@ -135,7 +135,8 @@ Node.prototype.startWeb3Connection = function()
 	console.info('Starting web3 connection');
 
 	web3 = new Web3();
-	web3.setProvider(new web3.providers.HttpProvider('http://' + (process.env.RPC_HOST || 'localhost') + ':' + (process.env.RPC_PORT || '8545')));
+	// The RPC_HOST should start with either "http://" or "https://".
+	web3.setProvider(new web3.providers.HttpProvider((process.env.RPC_HOST || 'http://localhost') + ':' + (process.env.RPC_PORT || '8545')));
 
 	this.checkWeb3Connection();
 }
