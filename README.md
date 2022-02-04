@@ -1,10 +1,13 @@
-Ethereum Network Stats
+Klaytn Network Stats
 ============
-[![Build Status][travis-image]][travis-url] [![dependency status][dep-image]][dep-url]
 
-This is a visual interface for tracking ethereum network status. It uses WebSockets to receive stats from running nodes and output them through an angular interface. It is the front-end implementation for [eth-net-intelligence-api](https://github.com/cubedro/eth-net-intelligence-api).
+This is a visual interface for tracking Klaytn network status.
+It uses WebSockets to receive stats from running nodes and output them through an angular interface.
+This repo is forked from [eth-netstats](https://github.com/cubedro/eth-netstats) (see [LICENSE](/klaytn-netstats/LICENSE)).
+It is backed by the back-end implementation in [klaytn-api](/klaytn-netstats/klaytn-api)
+which is copied from [eth-net-intelligence-api](https://github.com/cubedro/eth-net-intelligence-api) (see [LICENSE](/klaytn-netstats/klaytn-api/LICENSE)).
 
-![Screenshot](https://raw.githubusercontent.com/cubedro/eth-netstats/master/src/images/screenshot.jpg?v=0.0.6 "Screenshot")
+![Screenshot](https://raw.githubusercontent.com/klaytn/klaytn-netstats/master/src/images/screenshot.jpg?v=0.0.6 "Screenshot")
 
 ## Prerequisite
 * node
@@ -16,15 +19,14 @@ Make sure you have node.js and npm installed.
 Clone the repository and install the dependencies
 
 ```bash
-git clone https://github.com/cubedro/eth-netstats
-cd eth-netstats
+git clone https://github.com/klaytn/klaytn-netstats
+cd klaytn-netstats
 npm install
 sudo npm install -g grunt-cli
 ```
 
-##Build the resources
+## Build the resources
 NetStats features two versions: the full version and the lite version. In order to build the static files you have to run grunt tasks which will generate dist or dist-lite directories containing the js and css files, fonts and images.
-
 
 To build the full version run
 ```bash
@@ -41,15 +43,10 @@ If you want to build both versions run
 grunt all
 ```
 
-##Run
+## Run
 
 ```bash
 npm start
 ```
 
-see the interface at http://localhost:3000
-
-[travis-image]: https://travis-ci.org/cubedro/eth-netstats.svg
-[travis-url]: https://travis-ci.org/cubedro/eth-netstats
-[dep-image]: https://david-dm.org/cubedro/eth-netstats.svg
-[dep-url]: https://david-dm.org/cubedro/eth-netstats
+navigate to `http://localhost:3000` in your browser.
