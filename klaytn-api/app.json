@@ -11,13 +11,13 @@
     "env":
     {
       "NODE_ENV"        : "production",
-      "RPC_HOST"        : "localhost",
-      "RPC_PORT"        : "8545",
+      "RPC_HOST"        : "https://api.baobab.klaytn.net",
+      "RPC_PORT"        : "8651",
       "LISTENING_PORT"  : "30303",
-      "INSTANCE_NAME"   : "",
+      "INSTANCE_NAME"   : "klaytn-netstats",
       "CONTACT_DETAILS" : "",
-      "WS_SERVER"       : "wss://rpc.ethstats.net",
-      "WS_SECRET"       : "see http://forum.ethereum.org/discussion/2112/how-to-add-yourself-to-the-stats-dashboard-its-not-automatic",
+      "WS_SERVER"       : "http://localhost:3000",
+      "WS_SECRET"       : "mysecret",
       "VERBOSITY"       : 2
     }
   }
