@@ -1,0 +1,3 @@
+[submodule "klaytn-api/lib/klaytnjs-monorepo"]
+	path = klaytn-api/lib/klaytnjs-monorepo
+	url = https://github.com/2dvorak/ethereumjs-monorepo.git

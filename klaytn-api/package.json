@@ -12,6 +12,7 @@
     "chalk": "^1.0.0",
     "debounce": "1.0.0",
     "debug": "2.2.0",
+    "devp2p": "file:lib/klaytnjs-monorepo/packages/devp2p/dist",
     "lodash": "4.1.0",
     "primus": "4.0.5",
     "primus-emit": "1.0.0",
