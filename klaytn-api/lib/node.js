@@ -57,10 +57,15 @@ console.success('   ', 'v' + pjson.version);
 console.info('   ');
 console.info('   ');
 
-function Node ()
+function Node (rpc_ip, rpc_port)
 {
+	console.log("New node: ", rpc_ip, rpc_port);
+	if (rpc_ip) {
+		this._rpc_host = "http://" + rpc_ip;
+		this._rpc_port = rpc_port;
+	}
 	this.info = {
-		name: INSTANCE_NAME || (process.env.EC2_INSTANCE_ID || os.hostname()),
+		name: rpc_ip || INSTANCE_NAME || (process.env.EC2_INSTANCE_ID || os.hostname()),
 		contact: (process.env.CONTACT_DETAILS || ""),
 		coinbase: null,
 		node: null,
@@ -136,7 +141,7 @@ Node.prototype.startWeb3Connection = function()
 
 	web3 = new Web3();
 	// The RPC_HOST should start with either "http://" or "https://".
-	web3.setProvider(new web3.providers.HttpProvider((process.env.RPC_HOST || 'http://localhost') + ':' + (process.env.RPC_PORT || '8545')));
+	web3.setProvider(new web3.providers.HttpProvider((this._rpc_host || process.env.RPC_HOST || 'http://localhost') + ':' + (this._rpc_port || process.env.RPC_PORT || '8545')));
 
 	this.checkWeb3Connection();
 }
