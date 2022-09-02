@@ -15,7 +15,7 @@ var signs = [
 ];
 
 var types = [
-	'eth',
+	'klaytn',
 	'wsc',
 	'sys',
 	'his'
