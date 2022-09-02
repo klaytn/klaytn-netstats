@@ -4,7 +4,7 @@ require('./utils/logger.js');
 
 var os = require('os');
 var Web3 = require('web3');
-var web3;
+// var web3;
 var async = require('async');
 var _ = require('lodash');
 var debounce = require('debounce');
@@ -27,8 +27,8 @@ var WS_SECRET = process.env.WS_SECRET || "eth-net-stats-has-a-secret";
 
 var PENDING_WORKS = true;
 var MAX_BLOCKS_HISTORY = 40;
-var UPDATE_INTERVAL = 5000;
-var PING_INTERVAL = 3000;
+var UPDATE_INTERVAL = 5000*3;
+var PING_INTERVAL = 2000;
 var MINERS_LIMIT = 5;
 var MAX_HISTORY_UPDATE = 50;
 var MAX_CONNECTION_ATTEMPTS = 50;
@@ -57,12 +57,16 @@ console.success('   ', 'v' + pjson.version);
 console.info('   ');
 console.info('   ');
 
-function Node (rpc_ip, rpc_port)
+function Node (rpc_ip, port, onRpc, dpt)
 {
-	console.log("New node: ", rpc_ip, rpc_port);
 	if (rpc_ip) {
-		this._rpc_host = "http://" + rpc_ip;
-		this._rpc_port = rpc_port;
+		if (onRpc) {
+			this._rpc_host = "http://" + rpc_ip;
+			this._rpc_port = port;
+			this._on_rpc = true
+		} else {
+			this._on_rpc = false;
+		}
 	}
 	this.info = {
 		name: rpc_ip || INSTANCE_NAME || (process.env.EC2_INSTANCE_ID || os.hostname()),
@@ -86,6 +90,7 @@ function Node (rpc_ip, rpc_port)
 		mining: false,
 		hashrate: 0,
 		peers: 0,
+		p2pPeers: dpt.getPeers().length,
 		pending: 0,
 		gasPrice: 0,
 		block: {
@@ -99,7 +104,7 @@ function Node (rpc_ip, rpc_port)
 		syncing: false,
 		uptime: 0
 	};
-
+	this._dpt = dpt;
 	this._lastBlock = 0;
 	this._lastStats = JSON.stringify(this.stats);
 	this._lastFetch = 0;
@@ -110,6 +115,7 @@ function Node (rpc_ip, rpc_port)
 	this._lastSent = 0;
 	this._latency = 0;
 
+	this.web3 = null
 	this._web3 = false;
 	this._socket = false;
 
@@ -130,7 +136,11 @@ function Node (rpc_ip, rpc_port)
 	this._connection_attempts = 0;
 	this._timeOffset = null;
 
-	this.startWeb3Connection();
+	if (this._on_rpc) {
+		this.startWeb3Connection();
+	} else {
+		this.init()
+	}
 
 	return this;
 }
@@ -139,9 +149,9 @@ Node.prototype.startWeb3Connection = function()
 {
 	console.info('Starting web3 connection');
 
-	web3 = new Web3();
+	this.web3 = new Web3();
 	// The RPC_HOST should start with either "http://" or "https://".
-	web3.setProvider(new web3.providers.HttpProvider((this._rpc_host || process.env.RPC_HOST || 'http://localhost') + ':' + (this._rpc_port || process.env.RPC_PORT || '8545')));
+	this.web3.setProvider(new this.web3.providers.HttpProvider((this._rpc_host || process.env.RPC_HOST || 'http://localhost') + ':' + (this._rpc_port || process.env.RPC_PORT || '8545')));
 
 	this.checkWeb3Connection();
 }
@@ -152,7 +162,7 @@ Node.prototype.checkWeb3Connection = function()
 
 	if (!this._web3)
 	{
-		if(web3.isConnected()) {
+		if(this.web3.isConnected()) {
 			console.success('Web3 connection established');
 
 			this._web3 = true;
@@ -192,7 +202,7 @@ Node.prototype.reconnectWeb3 = function()
 
 	try
 	{
-		web3.reset(true);
+		this.web3.reset(true);
 	}
 	catch (err)
 	{
@@ -255,7 +265,6 @@ Node.prototype.setupSockets = function()
 	{
 		var now = _.now();
 		var latency = Math.ceil( (now - data.clientTime) / 2 );
-
 		socket.emit('latency', {
 			id: self.id,
 			latency: latency
@@ -342,11 +351,11 @@ Node.prototype.getInfo = function()
 	console.time('Got info');
 
 	try {
-		this.info.coinbase = web3.eth.coinbase;
-		this.info.node = web3.version.node;
-		this.info.net = web3.version.network;
-		this.info.protocol = web3.toDecimal(web3.version.ethereum);
-		this.info.api = web3.version.api;
+		this.info.coinbase = this.web3.eth.coinbase;
+		this.info.node = this.web3.version.node;
+		this.info.net = this.web3.version.network;
+		this.info.protocol = this.web3.toDecimal(this.web3.version.ethereum);
+		this.info.api = this.web3.version.api;
 
 		console.timeEnd('Got info');
 		console.info(this.info);
@@ -354,7 +363,7 @@ Node.prototype.getInfo = function()
 		return true;
 	}
 	catch (err) {
-		console.error("Couldn't get version");
+		console.error("Couldn't get version", "err", err);
 	}
 
 	return false;
@@ -369,10 +378,7 @@ Node.prototype.setInactive = function()
 	this._down++;
 
 	this.setUptime();
-
 	this.sendStatsUpdate(true);
-
-	// Schedule web3 reconnect
 	this.reconnectWeb3();
 
 	return this;
@@ -395,7 +401,7 @@ Node.prototype.formatBlock = function (block)
 			delete block.logsBloom;
 		}
 
-		return block;
+		return block
 	}
 
 	return false;
@@ -410,7 +416,7 @@ Node.prototype.getLatestBlock = function ()
 		var timeString = 'Got block in' + chalk.reset.red('');
 		console.time('==>', timeString);
 
-		web3.eth.getBlock('latest', false, function(error, result) {
+		this.web3.eth.getBlock('latest', false, function(error, result) {
 			self.validateLatestBlock(error, result, timeString);
 		});
 	}
@@ -429,10 +435,14 @@ Node.prototype.validateLatestBlock = function (error, result, timeString)
 	}
 
 	var block = this.formatBlock(result);
+	// if(!this._on_rpc){
+	// 	console.log("This is from p2p", "block", block, "node", this.info, web3)
+	// }
 
 	if(block === false)
 	{
 		console.error("xx>", "Got bad block:", chalk.reset.cyan(result));
+		console.error("xx>", "bad block:", result)
 
 		return false;
 	}
@@ -487,24 +497,24 @@ Node.prototype.getStats = function(forced)
 		async.parallel({
 			peers: function (callback)
 			{
-				web3.net.getPeerCount(callback);
+				self.web3.net.getPeerCount(callback);
 			},
 			mining: function (callback)
 			{
-				web3.eth.getMining(callback);
+				self.web3.eth.getMining(callback);
 			},
-			hashrate: function (callback)
-			{
-				web3.eth.getHashrate(callback);
-			},
+			// hashrate: function (callback)
+			// {
+			// 	web3.eth.getHashrate(callback);
+			// },
 			gasPrice: function (callback)
 			{
-				web3.eth.getGasPrice(callback);
+				self.web3.eth.getGasPrice(callback);
 			},
-			syncing: function (callback)
-			{
-				web3.eth.getSyncing(callback);
-			}
+			// syncing: function (callback)
+			// {
+			// 	web3.eth.getSyncing(callback);
+			// }
 		},
 		function (err, results)
 		{
@@ -524,25 +534,28 @@ Node.prototype.getStats = function(forced)
 			console.sstats('==>', 'Got getStats results in', chalk.reset.cyan(results.diff, 'ms'));
 
 			if(results.peers !== null)
+			// if(results.diff < 1000*60*10)
 			{
 				self.stats.active = true;
 				self.stats.peers = results.peers;
 				self.stats.mining = results.mining;
-				self.stats.hashrate = results.hashrate;
-				self.stats.gasPrice = results.gasPrice.toString(10);
+				// self.stats.hashrate = results.hashrate;
+				var suggestedGasPrice = results.gasPrice / 2;
+				self.stats.gasPrice = suggestedGasPrice.toString(10);
+				self.stats.p2pPeers = self._dpt.getPeers().length
 
-				if(results.syncing !== false) {
-					var sync = results.syncing;
+				// if(results.syncing !== false) {
+				// 	var sync = results.syncing;
 
-					var progress = sync.currentBlock - sync.startingBlock;
-					var total = sync.highestBlock - sync.startingBlock;
+				// 	var progress = sync.currentBlock - sync.startingBlock;
+				// 	var total = sync.highestBlock - sync.startingBlock;
 
-					sync.progress = progress/total;
+				// 	sync.progress = progress/total;
 
-					self.stats.syncing = sync;
-				} else {
-					self.stats.syncing = false;
-				}
+				// 	self.stats.syncing = sync;
+				// } else {
+				// 	self.stats.syncing = false;
+				// }
 			}
 			else {
 				self.setInactive();
@@ -564,7 +577,7 @@ Node.prototype.getPending = function()
 	{
 		console.stats('==>', 'Getting Pending')
 
-		web3.eth.getBlockTransactionCount('pending', function (err, pending)
+		this.web3.eth.getBlockTransactionCount('pending', function (err, pending)
 		{
 			if (err) {
 				console.error('xx>', 'getPending error: ', err);
@@ -603,23 +616,29 @@ Node.prototype.getHistory = function (range)
 		interv = range.list;
 
 	console.stats('his', 'Getting history from', chalk.reset.cyan(interv[0]), 'to', chalk.reset.cyan(interv[interv.length - 1]));
-
+	
+	console.log('his', 'Getting history from', chalk.reset.cyan(interv[0]), 'to', chalk.reset.cyan(interv[interv.length - 1]));
+	
 	async.mapSeries(interv, function (number, callback)
 	{
-		web3.eth.getBlock(number, false, callback);
+		self.web3.eth.getBlock(number, false, callback);
 	},
 	function (err, results)
 	{
 		if (err) {
 			console.error('his', 'history fetch failed:', err);
+			console.log('his', 'history fetch failed:', err);
 
-			results = false;
+			results = [];
 		}
 		else
 		{
 			for(var i=0; i < results.length; i++)
 			{
 				results[i] = self.formatBlock(results[i]);
+			}
+			if(results.length == undefined) {
+				results = []
 			}
 		}
 
@@ -667,6 +686,7 @@ Node.prototype.prepareStats = function ()
 			mining: this.stats.mining,
 			hashrate: this.stats.hashrate,
 			peers: this.stats.peers,
+			p2pPeers: this.stats.p2pPeers,
 			gasPrice: this.stats.gasPrice,
 			uptime: this.stats.uptime
 		}
@@ -692,6 +712,7 @@ Node.prototype.sendStatsUpdate = function (force)
 		console.stats("wsc", "Sending", chalk.reset.blue((force ? "forced" : "changed")), chalk.bold.white("update"));
 		var stats = this.prepareStats();
 		console.info(stats);
+		console.log(stats);
 		this.emit('stats', stats);
 		// this.emit('stats', this.prepareStats());
 	}
@@ -723,32 +744,32 @@ Node.prototype.setWatches = function()
 		}, PING_INTERVAL);
 	}
 
-	web3.eth.isSyncing(function(error, sync) {
-		if(!error) {
-			if(sync === true) {
-				web3.reset(true);
-				console.info("SYNC STARTED:", sync);
-			} else if(sync) {
-				var synced = sync.currentBlock - sync.startingBlock;
-				var total = sync.highestBlock - sync.startingBlock;
-				sync.progress = synced/total;
-				self.stats.syncing = sync;
+	// web3.eth.isSyncing(function(error, sync) {
+	// 	if(!error) {
+	// 		if(sync === true) {
+	// 			web3.reset(true);
+	// 			console.info("SYNC STARTED:", sync);
+	// 		} else if(sync) {
+	// 			var synced = sync.currentBlock - sync.startingBlock;
+	// 			var total = sync.highestBlock - sync.startingBlock;
+	// 			sync.progress = synced/total;
+	// 			self.stats.syncing = sync;
 
-				if(self._lastBlock !== sync.currentBlock) {
-					self._latestQueue.push(sync.currentBlock);
-				}
-				console.info("SYNC UPDATE:", sync);
-			} else {
-				console.info("SYNC STOPPED:", sync);
-				self.stats.syncing = false;
-				self.setFilters();
-			}
-		} else {
-			self.stats.syncing = false;
-			self.setFilters();
-			console.error("SYNC ERROR", error);
-		}
-	});
+	// 			if(self._lastBlock !== sync.currentBlock) {
+	// 				self._latestQueue.push(sync.currentBlock);
+	// 			}
+	// 			console.info("SYNC UPDATE:", sync);
+	// 		} else {
+	// 			console.info("SYNC STOPPED:", sync);
+	// 			self.stats.syncing = false;
+	// 			self.setFilters();
+	// 		}
+	// 	} else {
+	// 		self.stats.syncing = false;
+	// 		self.setFilters();
+	// 		console.error("SYNC ERROR", error);
+	// 	}
+	// });
 }
 
 Node.prototype.setFilters = function()
@@ -761,7 +782,7 @@ Node.prototype.setFilters = function()
 
 		console.time('==>', timeString);
 
-		web3.eth.getBlock(hash, false, function (error, result)
+		self.web3.eth.getBlock(hash, false, function (error, result)
 		{
 			self.validateLatestBlock(error, result, timeString);
 
@@ -786,7 +807,7 @@ Node.prototype.setFilters = function()
 	}, 5);
 
 	try {
-		this.chainFilter = web3.eth.filter('latest');
+		this.chainFilter = this.web3.eth.filter('latest');
 		this.chainFilter.watch( function (err, hash)
 		{
 			var now = _.now();
@@ -795,7 +816,7 @@ Node.prototype.setFilters = function()
 
 			if(hash === null)
 			{
-				hash = web3.eth.blockNumber;
+				hash = this.web3.eth.blockNumber;
 			}
 
 			console.stats('>>>', 'Chain Filter triggered: ', chalk.reset.red(hash), '- last trigger:', chalk.reset.cyan(time));
@@ -849,7 +870,7 @@ Node.prototype.setFilters = function()
 	}
 
 	try {
-		this.pendingFilter = web3.eth.filter('pending');
+		this.pendingFilter = this.web3.eth.filter('pending');
 		this.pendingFilter.watch( function (err, hash)
 		{
 			var now = _.now();
@@ -902,7 +923,7 @@ Node.prototype.stop = function()
 	if(this.pingInterval)
 		clearInterval(this.pingInterval);
 
-	web3.reset(false);
+	this.web3.reset(false);
 }
 
 module.exports = Node;
