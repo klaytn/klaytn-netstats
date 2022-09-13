@@ -4,7 +4,7 @@ require('./utils/logger.js');
 
 var os = require('os');
 var Web3 = require('web3');
-// var web3;
+var web3;
 var async = require('async');
 var _ = require('lodash');
 var debounce = require('debounce');
@@ -115,7 +115,6 @@ function Node (rpc_ip, port, onRpc, dpt)
 	this._lastSent = 0;
 	this._latency = 0;
 
-	this.web3 = null
 	this._web3 = false;
 	this._socket = false;
 
@@ -149,9 +148,9 @@ Node.prototype.startWeb3Connection = function()
 {
 	console.info('Starting web3 connection');
 
-	this.web3 = new Web3();
+	web3 = new Web3();
 	// The RPC_HOST should start with either "http://" or "https://".
-	this.web3.setProvider(new this.web3.providers.HttpProvider((this._rpc_host || process.env.RPC_HOST || 'http://localhost') + ':' + (this._rpc_port || process.env.RPC_PORT || '8545')));
+	web3.setProvider(new web3.providers.HttpProvider((this._rpc_host || process.env.RPC_HOST || 'http://localhost') + ':' + (this._rpc_port || process.env.RPC_PORT || '8545')));
 
 	this.checkWeb3Connection();
 }
@@ -162,7 +161,7 @@ Node.prototype.checkWeb3Connection = function()
 
 	if (!this._web3)
 	{
-		if(this.web3.isConnected()) {
+		if(web3.isConnected()) {
 			console.success('Web3 connection established');
 
 			this._web3 = true;
@@ -202,7 +201,7 @@ Node.prototype.reconnectWeb3 = function()
 
 	try
 	{
-		this.web3.reset(true);
+		web3.reset(true);
 	}
 	catch (err)
 	{
@@ -351,11 +350,11 @@ Node.prototype.getInfo = function()
 	console.time('Got info');
 
 	try {
-		this.info.coinbase = this.web3.eth.coinbase;
-		this.info.node = this.web3.version.node;
-		this.info.net = this.web3.version.network;
-		this.info.protocol = this.web3.toDecimal(this.web3.version.ethereum);
-		this.info.api = this.web3.version.api;
+		this.info.coinbase = web3.eth.coinbase;
+		this.info.node = web3.version.node;
+		this.info.net = web3.version.network;
+		this.info.protocol = web3.toDecimal(web3.version.ethereum);
+		this.info.api = web3.version.api;
 
 		console.timeEnd('Got info');
 		console.info(this.info);
@@ -391,7 +390,8 @@ Node.prototype.setUptime = function()
 
 Node.prototype.formatBlock = function (block)
 {
-	if( !_.isNull(block) && !_.isUndefined(block) && !_.isUndefined(block.number) && block.number >= 0 && !_.isUndefined(block.difficulty) && !_.isUndefined(block.totalDifficulty) )
+	// if( !_.isNull(block) && !_.isUndefined(block) && !_.isUndefined(block.number) && block.number >= 0 && !_.isUndefined(block.difficulty) && !_.isUndefined(block.totalDifficulty) )
+	if( !_.isNull(block) && !_.isUndefined(block) && !_.isUndefined(block.number) && block.number >= 0 )
 	{
 		block.difficulty = block.difficulty.toString(10);
 		block.totalDifficulty = block.totalDifficulty.toString(10);
@@ -416,7 +416,7 @@ Node.prototype.getLatestBlock = function ()
 		var timeString = 'Got block in' + chalk.reset.red('');
 		console.time('==>', timeString);
 
-		this.web3.eth.getBlock('latest', false, function(error, result) {
+		web3.eth.getBlock('latest', false, function(error, result) {
 			self.validateLatestBlock(error, result, timeString);
 		});
 	}
@@ -435,9 +435,7 @@ Node.prototype.validateLatestBlock = function (error, result, timeString)
 	}
 
 	var block = this.formatBlock(result);
-	// if(!this._on_rpc){
-	// 	console.log("This is from p2p", "block", block, "node", this.info, web3)
-	// }
+	// var block = result
 
 	if(block === false)
 	{
@@ -497,11 +495,11 @@ Node.prototype.getStats = function(forced)
 		async.parallel({
 			peers: function (callback)
 			{
-				self.web3.net.getPeerCount(callback);
+				web3.net.getPeerCount(callback);
 			},
 			mining: function (callback)
 			{
-				self.web3.eth.getMining(callback);
+				web3.eth.getMining(callback);
 			},
 			// hashrate: function (callback)
 			// {
@@ -509,7 +507,7 @@ Node.prototype.getStats = function(forced)
 			// },
 			gasPrice: function (callback)
 			{
-				self.web3.eth.getGasPrice(callback);
+				web3.eth.getGasPrice(callback);
 			},
 			// syncing: function (callback)
 			// {
@@ -577,7 +575,7 @@ Node.prototype.getPending = function()
 	{
 		console.stats('==>', 'Getting Pending')
 
-		this.web3.eth.getBlockTransactionCount('pending', function (err, pending)
+		web3.eth.getBlockTransactionCount('pending', function (err, pending)
 		{
 			if (err) {
 				console.error('xx>', 'getPending error: ', err);
@@ -621,7 +619,7 @@ Node.prototype.getHistory = function (range)
 	
 	async.mapSeries(interv, function (number, callback)
 	{
-		self.web3.eth.getBlock(number, false, callback);
+		web3.eth.getBlock(number, false, callback);
 	},
 	function (err, results)
 	{
@@ -782,7 +780,7 @@ Node.prototype.setFilters = function()
 
 		console.time('==>', timeString);
 
-		self.web3.eth.getBlock(hash, false, function (error, result)
+		web3.eth.getBlock(hash, false, function (error, result)
 		{
 			self.validateLatestBlock(error, result, timeString);
 
@@ -807,7 +805,7 @@ Node.prototype.setFilters = function()
 	}, 5);
 
 	try {
-		this.chainFilter = this.web3.eth.filter('latest');
+		this.chainFilter = web3.eth.filter('latest');
 		this.chainFilter.watch( function (err, hash)
 		{
 			var now = _.now();
@@ -816,7 +814,7 @@ Node.prototype.setFilters = function()
 
 			if(hash === null)
 			{
-				hash = this.web3.eth.blockNumber;
+				hash = web3.eth.blockNumber;
 			}
 
 			console.stats('>>>', 'Chain Filter triggered: ', chalk.reset.red(hash), '- last trigger:', chalk.reset.cyan(time));
@@ -870,7 +868,7 @@ Node.prototype.setFilters = function()
 	}
 
 	try {
-		this.pendingFilter = this.web3.eth.filter('pending');
+		this.pendingFilter = web3.eth.filter('pending');
 		this.pendingFilter.watch( function (err, hash)
 		{
 			var now = _.now();
@@ -923,7 +921,7 @@ Node.prototype.stop = function()
 	if(this.pingInterval)
 		clearInterval(this.pingInterval);
 
-	this.web3.reset(false);
+	web3.reset(false);
 }
 
 module.exports = Node;
