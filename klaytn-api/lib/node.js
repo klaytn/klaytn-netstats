@@ -27,7 +27,7 @@ var WS_SECRET = process.env.WS_SECRET || "eth-net-stats-has-a-secret";
 
 var PENDING_WORKS = true;
 var MAX_BLOCKS_HISTORY = 40;
-var UPDATE_INTERVAL = 5000;
+var UPDATE_INTERVAL = 5000*3;
 var PING_INTERVAL = 3000;
 var MINERS_LIMIT = 5;
 var MAX_HISTORY_UPDATE = 50;
@@ -57,12 +57,16 @@ console.success('   ', 'v' + pjson.version);
 console.info('   ');
 console.info('   ');
 
-function Node (rpc_ip, rpc_port)
+function Node (rpc_ip, port, onRpc, dpt)
 {
-	console.log("New node: ", rpc_ip, rpc_port);
 	if (rpc_ip) {
-		this._rpc_host = "http://" + rpc_ip;
-		this._rpc_port = rpc_port;
+		if (onRpc) {
+			this._rpc_host = "http://" + rpc_ip;
+			this._rpc_port = port;
+			this._on_rpc = true
+		} else {
+			this._on_rpc = false;
+		}
 	}
 	this.info = {
 		name: rpc_ip || INSTANCE_NAME || (process.env.EC2_INSTANCE_ID || os.hostname()),
@@ -86,6 +90,7 @@ function Node (rpc_ip, rpc_port)
 		mining: false,
 		hashrate: 0,
 		peers: 0,
+		p2pPeers: dpt.getPeers().length,
 		pending: 0,
 		gasPrice: 0,
 		block: {
@@ -99,7 +104,7 @@ function Node (rpc_ip, rpc_port)
 		syncing: false,
 		uptime: 0
 	};
-
+	this._dpt = dpt;
 	this._lastBlock = 0;
 	this._lastStats = JSON.stringify(this.stats);
 	this._lastFetch = 0;
@@ -130,7 +135,11 @@ function Node (rpc_ip, rpc_port)
 	this._connection_attempts = 0;
 	this._timeOffset = null;
 
-	this.startWeb3Connection();
+	if (this._on_rpc) {
+		this.startWeb3Connection();
+	} else {
+		this.init()
+	}
 
 	return this;
 }
@@ -255,7 +264,6 @@ Node.prototype.setupSockets = function()
 	{
 		var now = _.now();
 		var latency = Math.ceil( (now - data.clientTime) / 2 );
-
 		socket.emit('latency', {
 			id: self.id,
 			latency: latency
@@ -354,7 +362,7 @@ Node.prototype.getInfo = function()
 		return true;
 	}
 	catch (err) {
-		console.error("Couldn't get version");
+		console.error("Couldn't get version", "err", err);
 	}
 
 	return false;
@@ -369,10 +377,7 @@ Node.prototype.setInactive = function()
 	this._down++;
 
 	this.setUptime();
-
 	this.sendStatsUpdate(true);
-
-	// Schedule web3 reconnect
 	this.reconnectWeb3();
 
 	return this;
@@ -385,7 +390,8 @@ Node.prototype.setUptime = function()
 
 Node.prototype.formatBlock = function (block)
 {
-	if( !_.isNull(block) && !_.isUndefined(block) && !_.isUndefined(block.number) && block.number >= 0 && !_.isUndefined(block.difficulty) && !_.isUndefined(block.totalDifficulty) )
+	// if( !_.isNull(block) && !_.isUndefined(block) && !_.isUndefined(block.number) && block.number >= 0 && !_.isUndefined(block.difficulty) && !_.isUndefined(block.totalDifficulty) )
+	if( !_.isNull(block) && !_.isUndefined(block) && !_.isUndefined(block.number) && block.number >= 0 )
 	{
 		block.difficulty = block.difficulty.toString(10);
 		block.totalDifficulty = block.totalDifficulty.toString(10);
@@ -395,7 +401,7 @@ Node.prototype.formatBlock = function (block)
 			delete block.logsBloom;
 		}
 
-		return block;
+		return block
 	}
 
 	return false;
@@ -429,10 +435,12 @@ Node.prototype.validateLatestBlock = function (error, result, timeString)
 	}
 
 	var block = this.formatBlock(result);
+	// var block = result
 
 	if(block === false)
 	{
 		console.error("xx>", "Got bad block:", chalk.reset.cyan(result));
+		console.error("xx>", "bad block:", result)
 
 		return false;
 	}
@@ -493,18 +501,18 @@ Node.prototype.getStats = function(forced)
 			{
 				web3.eth.getMining(callback);
 			},
-			hashrate: function (callback)
-			{
-				web3.eth.getHashrate(callback);
-			},
+			// hashrate: function (callback)
+			// {
+			// 	web3.eth.getHashrate(callback);
+			// },
 			gasPrice: function (callback)
 			{
 				web3.eth.getGasPrice(callback);
 			},
-			syncing: function (callback)
-			{
-				web3.eth.getSyncing(callback);
-			}
+			// syncing: function (callback)
+			// {
+			// 	web3.eth.getSyncing(callback);
+			// }
 		},
 		function (err, results)
 		{
@@ -524,25 +532,28 @@ Node.prototype.getStats = function(forced)
 			console.sstats('==>', 'Got getStats results in', chalk.reset.cyan(results.diff, 'ms'));
 
 			if(results.peers !== null)
+			// if(results.diff < 1000*60*10)
 			{
 				self.stats.active = true;
 				self.stats.peers = results.peers;
 				self.stats.mining = results.mining;
-				self.stats.hashrate = results.hashrate;
-				self.stats.gasPrice = results.gasPrice.toString(10);
+				// self.stats.hashrate = results.hashrate;
+				var suggestedGasPrice = results.gasPrice / 2;
+				self.stats.gasPrice = suggestedGasPrice.toString(10);
+				self.stats.p2pPeers = self._dpt.getPeers().length
 
-				if(results.syncing !== false) {
-					var sync = results.syncing;
+				// if(results.syncing !== false) {
+				// 	var sync = results.syncing;
 
-					var progress = sync.currentBlock - sync.startingBlock;
-					var total = sync.highestBlock - sync.startingBlock;
+				// 	var progress = sync.currentBlock - sync.startingBlock;
+				// 	var total = sync.highestBlock - sync.startingBlock;
 
-					sync.progress = progress/total;
+				// 	sync.progress = progress/total;
 
-					self.stats.syncing = sync;
-				} else {
-					self.stats.syncing = false;
-				}
+				// 	self.stats.syncing = sync;
+				// } else {
+				// 	self.stats.syncing = false;
+				// }
 			}
 			else {
 				self.setInactive();
@@ -603,7 +614,9 @@ Node.prototype.getHistory = function (range)
 		interv = range.list;
 
 	console.stats('his', 'Getting history from', chalk.reset.cyan(interv[0]), 'to', chalk.reset.cyan(interv[interv.length - 1]));
-
+	
+	console.log('his', 'Getting history from', chalk.reset.cyan(interv[0]), 'to', chalk.reset.cyan(interv[interv.length - 1]));
+	
 	async.mapSeries(interv, function (number, callback)
 	{
 		web3.eth.getBlock(number, false, callback);
@@ -612,14 +625,18 @@ Node.prototype.getHistory = function (range)
 	{
 		if (err) {
 			console.error('his', 'history fetch failed:', err);
+			console.log('his', 'history fetch failed:', err);
 
-			results = false;
+			results = [];
 		}
 		else
 		{
 			for(var i=0; i < results.length; i++)
 			{
 				results[i] = self.formatBlock(results[i]);
+			}
+			if(results.length == undefined) {
+				results = []
 			}
 		}
 
@@ -667,6 +684,7 @@ Node.prototype.prepareStats = function ()
 			mining: this.stats.mining,
 			hashrate: this.stats.hashrate,
 			peers: this.stats.peers,
+			p2pPeers: this.stats.p2pPeers,
 			gasPrice: this.stats.gasPrice,
 			uptime: this.stats.uptime
 		}
@@ -692,6 +710,7 @@ Node.prototype.sendStatsUpdate = function (force)
 		console.stats("wsc", "Sending", chalk.reset.blue((force ? "forced" : "changed")), chalk.bold.white("update"));
 		var stats = this.prepareStats();
 		console.info(stats);
+		console.log(stats);
 		this.emit('stats', stats);
 		// this.emit('stats', this.prepareStats());
 	}
@@ -723,32 +742,32 @@ Node.prototype.setWatches = function()
 		}, PING_INTERVAL);
 	}
 
-	web3.eth.isSyncing(function(error, sync) {
-		if(!error) {
-			if(sync === true) {
-				web3.reset(true);
-				console.info("SYNC STARTED:", sync);
-			} else if(sync) {
-				var synced = sync.currentBlock - sync.startingBlock;
-				var total = sync.highestBlock - sync.startingBlock;
-				sync.progress = synced/total;
-				self.stats.syncing = sync;
+	// web3.eth.isSyncing(function(error, sync) {
+	// 	if(!error) {
+	// 		if(sync === true) {
+	// 			web3.reset(true);
+	// 			console.info("SYNC STARTED:", sync);
+	// 		} else if(sync) {
+	// 			var synced = sync.currentBlock - sync.startingBlock;
+	// 			var total = sync.highestBlock - sync.startingBlock;
+	// 			sync.progress = synced/total;
+	// 			self.stats.syncing = sync;
 
-				if(self._lastBlock !== sync.currentBlock) {
-					self._latestQueue.push(sync.currentBlock);
-				}
-				console.info("SYNC UPDATE:", sync);
-			} else {
-				console.info("SYNC STOPPED:", sync);
-				self.stats.syncing = false;
-				self.setFilters();
-			}
-		} else {
-			self.stats.syncing = false;
-			self.setFilters();
-			console.error("SYNC ERROR", error);
-		}
-	});
+	// 			if(self._lastBlock !== sync.currentBlock) {
+	// 				self._latestQueue.push(sync.currentBlock);
+	// 			}
+	// 			console.info("SYNC UPDATE:", sync);
+	// 		} else {
+	// 			console.info("SYNC STOPPED:", sync);
+	// 			self.stats.syncing = false;
+	// 			self.setFilters();
+	// 		}
+	// 	} else {
+	// 		self.stats.syncing = false;
+	// 		self.setFilters();
+	// 		console.error("SYNC ERROR", error);
+	// 	}
+	// });
 }
 
 Node.prototype.setFilters = function()
