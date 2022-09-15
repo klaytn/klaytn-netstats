@@ -531,8 +531,8 @@ Node.prototype.getStats = function(forced)
 
 			console.sstats('==>', 'Got getStats results in', chalk.reset.cyan(results.diff, 'ms'));
 
-			if(results.peers !== null)
-			// if(results.diff < 1000*60*10)
+			// if(results.peers !== null)
+			if(results.diff < 1000*20)
 			{
 				self.stats.active = true;
 				self.stats.peers = results.peers;
