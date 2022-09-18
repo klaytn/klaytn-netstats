@@ -16,14 +16,8 @@ var Primus = require('primus'),
 	Latency = require('primus-spark-latency'),
 	Socket, socket;
 
-var ETH_VERSION,
-	NET_VERSION,
-	PROTOCOL_VERSION,
-	API_VERSION,
-	COINBASE;
-
 var INSTANCE_NAME = process.env.INSTANCE_NAME;
-var WS_SECRET = process.env.WS_SECRET || "eth-net-stats-has-a-secret";
+var WS_SECRET = process.env.WS_SECRET || "klaytn-net-stats-has-a-secret";
 
 var PENDING_WORKS = true;
 var MAX_BLOCKS_HISTORY = 40;
@@ -137,9 +131,9 @@ function Node (rpc_ip, port, onRpc, dpt)
 
 	if (this._on_rpc) {
 		this.startWeb3Connection();
-	} else {
-		this.init()
-	}
+	} // else {
+	// 	this.init()
+	// }
 
 	return this;
 }
@@ -370,6 +364,7 @@ Node.prototype.getInfo = function()
 
 Node.prototype.setInactive = function()
 {
+	console.info("Node is inactivated, trying to reconnect...")
 	this.stats.active = false;
 	this.stats.peers = 0;
 	this.stats.mining = false;
