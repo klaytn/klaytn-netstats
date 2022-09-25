@@ -20,8 +20,8 @@ if( !_.isUndefined(process.env.WS_SECRET) && !_.isNull(process.env.WS_SECRET) )
 else
 {
 	try {
-		var tmp_secret_json = require('./ws_secret.json');
-		WS_SECRET = _.values(tmp_secret_json);
+		var app_json = require('./app.json');
+		WS_SECRET = app_json.tmp_secret_json;
 	}
 	catch (e)
 	{
