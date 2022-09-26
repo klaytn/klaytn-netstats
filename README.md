@@ -7,7 +7,7 @@ This repo is forked from [eth-netstats](https://github.com/cubedro/eth-netstats)
 It is backed by the back-end implementation in [klaytn-net-intelligence-api](https://github.com/klaytn/klaytn-net-intelligence-api)
 which is copied from [eth-net-intelligence-api](https://github.com/cubedro/eth-net-intelligence-api) (see [LICENSE](https://github.com/klaytn/klaytn-net-intelligence-api/blob/main/LICENSE)).
 
-![Screenshot](https://raw.githubusercontent.com/klaytn/klaytn-netstats//tree/main/src/images/screenshot.png?v=0.0.6 "Screenshot")
+![Screenshot](https://raw.githubusercontent.com/klaytn/klaytn-netstats//main/src/images/screenshot.png?v=0.0.6 "Screenshot")
 
 ## Prerequisite
 * Docker
