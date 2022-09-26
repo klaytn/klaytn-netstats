@@ -155,7 +155,7 @@ span.small-title span.small {
 
 .big-info.chart {
 	height: 120px;
-	-webkit-box-sizing: border-box
+	-webkit-box-sizing: border-box;
 	box-sizing: border-box;
 }
 
@@ -343,7 +343,7 @@ nodepropagchart {
 	position: relative;
 	display: block;
 	width: 100%;
-	height: 242px;
+	height: 370px;
 	overflow: hidden;
 }
 
@@ -353,8 +353,8 @@ nodepropagchart {
 	width: 100%;
 	height: 100%;
 	display: inline-block;
-	position: absolute;
-	top: 0;
+	position: relative;
+	top: 70px;
 	left: 0;
 }
 

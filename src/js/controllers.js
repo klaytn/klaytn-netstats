@@ -26,6 +26,7 @@ netStatsApp.controller('StatsCtrl', function($scope, $filter, $localStorage, soc
 	$scope.difficultyChart = _.fill(Array(MAX_BINS), 2);
 	$scope.transactionDensity = _.fill(Array(MAX_BINS), 2);
 	$scope.gasSpending = _.fill(Array(MAX_BINS), 2);
+	$scope.baseFee = _.fill(Array(MAX_BINS), 2);
 	$scope.miners = [];
 
 
@@ -235,11 +236,11 @@ netStatsApp.controller('StatsCtrl', function($scope, $filter, $localStorage, soc
 							return parseInt(node.stats.block.number);
 						}).stats.block;
 
-						if (data.block.number > best.number) {
-							data.block.arrived = _.now();
-						} else {
-							data.block.arrived = best.arrived;
-						}
+						// if (data.block.number > best.number) {
+						// 	data.block.arrived = _.now();
+						// } else {
+						// 	data.block.arrived = best.arrived;
+						// }
 
 						$scope.nodes[index].history = data.history;
 					}
@@ -280,6 +281,7 @@ netStatsApp.controller('StatsCtrl', function($scope, $filter, $localStorage, soc
 						$scope.nodes[index].stats.peers = data.stats.peers;
 						$scope.nodes[index].stats.gasPrice = data.stats.gasPrice;
 						$scope.nodes[index].stats.uptime = data.stats.uptime;
+						$scope.nodes[index].stats.p2pPeers = data.stats.p2pPeers;
 
 						if( !_.isUndefined(data.stats.latency) && _.get($scope.nodes[index], 'stats.latency', 0) !== data.stats.latency )
 						{
@@ -329,29 +331,36 @@ netStatsApp.controller('StatsCtrl', function($scope, $filter, $localStorage, soc
 				if( !_.isEqual($scope.avgBlockTime, data.avgBlocktime) )
 					$scope.avgBlockTime = data.avgBlocktime;
 
-				if( !_.isEqual($scope.avgHashrate, data.avgHashrate) )
-					$scope.avgHashrate = data.avgHashrate;
+				// if( !_.isEqual($scope.avgHashrate, data.avgHashrate) )
+				// 	$scope.avgHashrate = data.avgHashrate;
 
-				if( !_.isEqual($scope.lastGasLimit, data.gasLimit) && data.gasLimit.length >= MAX_BINS )
-					$scope.lastGasLimit = data.gasLimit;
+				// if( !_.isEqual($scope.lastGasLimit, data.gasLimit) && data.gasLimit.length >= MAX_BINS )
+				// 	$scope.lastGasLimit = data.gasLimit;
 
-				if( !_.isEqual($scope.lastBlocksTime, data.blocktime) && data.blocktime.length >= MAX_BINS )
+				if( !_.isEqual($scope.lastBlocksTime, data.blocktime) && data.blocktime.length >= MAX_BINS ) {
+					data.blocktime[0] = 0;
 					$scope.lastBlocksTime = data.blocktime;
+				}
 
-				if( !_.isEqual($scope.difficultyChart, data.difficulty) && data.difficulty.length >= MAX_BINS )
-					$scope.difficultyChart = data.difficulty;
+				if( !_.isEqual($scope.baseFee, data.baseFee) && data.baseFee.length >= MAX_BINS ) {
+					data.baseFee[0] = 0;
+					$scope.baseFee = data.baseFee;
+				}
+
+				// if( !_.isEqual($scope.difficultyChart, data.difficulty) && data.difficulty.length >= MAX_BINS )
+				// 	$scope.difficultyChart = data.difficulty;
 
 				if( !_.isEqual($scope.blockPropagationChart, data.propagation.histogram) ) {
 					$scope.blockPropagationChart = data.propagation.histogram;
 					$scope.blockPropagationAvg = data.propagation.avg;
 				}
 
-				data.uncleCount.reverse();
+				// data.uncleCount.reverse();
 
-				if( !_.isEqual($scope.uncleCountChart, data.uncleCount) && data.uncleCount.length >= MAX_BINS ) {
-					$scope.uncleCount = data.uncleCount[data.uncleCount.length-2] + data.uncleCount[data.uncleCount.length-1];
-					$scope.uncleCountChart = data.uncleCount;
-				}
+				// if( !_.isEqual($scope.uncleCountChart, data.uncleCount) && data.uncleCount.length >= MAX_BINS ) {
+				// 	$scope.uncleCount = data.uncleCount[data.uncleCount.length-2] + data.uncleCount[data.uncleCount.length-1];
+				// 	$scope.uncleCountChart = data.uncleCount;
+				// }
 
 				if( !_.isEqual($scope.transactionDensity, data.transactions) && data.transactions.length >= MAX_BINS )
 					$scope.transactionDensity = data.transactions;
@@ -568,6 +577,7 @@ netStatsApp.controller('StatsCtrl', function($scope, $filter, $localStorage, soc
 				}).stats;
 
 				$scope.lastBlock = $scope.bestStats.block.arrived;
+				$scope.p2pNodesActive = $scope.bestStats.p2pPeers;
 				$scope.lastDifficulty = $scope.bestStats.block.difficulty;
 			}
 		}

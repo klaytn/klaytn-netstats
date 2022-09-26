@@ -20,8 +20,8 @@ if( !_.isUndefined(process.env.WS_SECRET) && !_.isNull(process.env.WS_SECRET) )
 else
 {
 	try {
-		var tmp_secret_json = require('./ws_secret.json');
-		WS_SECRET = _.values(tmp_secret_json);
+		var app_json = require('./app.json');
+		WS_SECRET = app_json.tmp_secret_json;
 	}
 	catch (e)
 	{
@@ -69,17 +69,17 @@ client.plugin('emit', require('primus-emit'));
 
 
 // Init external API
-external = new Primus(server, {
+ext = new Primus(server, {
 	transformer: 'websockets',
-	pathname: '/external',
+	pathname: '/ext',
 	parser: 'JSON'
 });
 
-external.plugin('emit', require('primus-emit'));
+ext.plugin('emit', require('primus-emit'));
 
 // Init collections
 var Collection = require('./lib/collection');
-var Nodes = new Collection(external);
+var Nodes = new Collection(ext);
 
 Nodes.setChartsCallback(function (err, charts)
 {
@@ -322,10 +322,10 @@ api.on('connection', function (spark)
 
 				if(latency !== null)
 				{
-					// client.write({
-					// 	action: 'latency',
-					// 	data: latency
-					// });
+					client.write({
+						action: 'latency',
+						data: latency
+					});
 
 					console.info('API', 'PIN', 'Latency:', latency, 'from:', data.id);
 				}
@@ -334,7 +334,6 @@ api.on('connection', function (spark)
 			if( Nodes.requiresUpdate(data.id) )
 			{
 				var range = Nodes.getHistory().getHistoryRequestRange();
-
 				spark.emit('history', range);
 				console.info('API', 'HIS', 'Asked:', data.id, 'for history:', range.min, '-', range.max);
 
@@ -406,7 +405,7 @@ var nodeCleanupTimeout = setInterval( function ()
 
 	Nodes.getCharts();
 
-}, 1000*60*60);
+}, 1000*40);
 
 server.listen(process.env.PORT || 3000);
 
