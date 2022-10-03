@@ -1,7 +1,16 @@
 FROM node:17
 
+ENV WS_SECRET=$WS_SECRET
+
 RUN apt-get update && apt-get install -y git node-typescript
-RUN git clone -b main https://github.com/klaytn/klaytn-netstats.git
 
 WORKDIR /klaytn-netstats
-RUN npm install && npm install -g grunt-cli && grunt all
+
+ADD . .
+
+RUN npm install && \
+    npm install -g grunt-cli && \
+    grunt all
+
+EXPOSE 3000
+CMD npm start
