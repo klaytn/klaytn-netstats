@@ -1,7 +1,5 @@
 FROM node:17
 
-ENV WS_SECRET=$WS_SECRET
-
 RUN apt-get update && apt-get install -y git node-typescript
 
 WORKDIR /klaytn-netstats
@@ -13,4 +11,4 @@ RUN npm install && \
     grunt all
 
 EXPOSE 3000
-CMD npm start
+CMD ["npm", "start"]
