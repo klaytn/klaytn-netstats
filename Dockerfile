@@ -1,5 +1,8 @@
 FROM node:17
 
+ARG WS_SECRET=$WS_SECRET
+ENV WS_SECRET=$WS_SECRET
+
 RUN apt-get update && apt-get install -y git node-typescript
 
 WORKDIR /klaytn-netstats
